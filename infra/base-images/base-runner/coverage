@@ -345,7 +345,7 @@ for fuzz_target in $FUZZ_TARGETS; do
   fi
 
 
-  # Do not spawn more processes than the number of CPUs available.
+  # Do not spawn more processes than half the number of CPUs available.
   n_child_proc=$(jobs -rp | wc -l)
   while [ "$n_child_proc" -eq "$MAX_PARALLEL_COUNT" ]; do
     sleep 4
