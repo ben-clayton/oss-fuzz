@@ -68,7 +68,9 @@ TIMEOUT=1h
 objects=""
 
 # Number of CPUs available, this is needed for running tests in parallel.
+# Set the max number of parallel jobs to be half the CPU count (min 1).
 NPROC=$(nproc)
+MAX_PARALLEL_COUNT=$((NPROC / 2 < 1 ? 1 : NPROC / 2)) 
 
 CORPUS_DIR=${CORPUS_DIR:-"/corpus"}
 
@@ -345,7 +347,7 @@ for fuzz_target in $FUZZ_TARGETS; do
 
   # Do not spawn more processes than the number of CPUs available.
   n_child_proc=$(jobs -rp | wc -l)
-  while [ "$n_child_proc" -eq "$NPROC" ]; do
+  while [ "$n_child_proc" -eq "$MAX_PARALLEL_COUNT" ]; do
     sleep 4
     n_child_proc=$(jobs -rp | wc -l)
   done
