@@ -88,6 +88,8 @@ def get_criticality_score(repo_url):
       ['criticality_score', '--format', 'json', '--repo', repo_url],
       capture_output=True,
       text=True)
+  print(f'get_criticality_score stdout {report.stdout}')
+  print(f'get_criticality_score stderr {report.stderr}')
   content = report.stderr.split('\n')
   scores = {}
   for entry in content:
@@ -137,6 +139,9 @@ def is_author_internal_member(pr_author, headers):
   member_response = requests.get(
       f'{API_URL}/orgs/google/teams/gosst/memberships/{pr_author}',
       headers=headers)
+  print(f'membership response {member_response}')
+  print(f'membership response status code {member_response.status_code}')
+  print(f'membership request: {API_URL}/orgs/google/teams/gosst/memberships/{pr_author}')
   if member_response.ok:
     save_env(None, None, True)
     return True
