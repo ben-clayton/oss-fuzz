@@ -132,7 +132,7 @@ def get_pull_request_url(commit, headers):
 def is_author_internal_member(pr_author):
   """Returns if the author is an internal member."""
   internal_members = [
-    'Alan32Liu', 'hogo6002', 'jonathanmetzman', 'oliverchang']
+    'Alan32Liu', 'jonathanmetzman', 'oliverchang']
   if pr_author in internal_members:
     save_env(None, None, True)
     return True
