@@ -137,11 +137,14 @@ def get_pull_request_url(commit, headers):
 def is_author_internal_member(pr_author, headers):
   """Returns if the author is an internal member."""
   member_response = requests.get(
-      f'{API_URL}/orgs/google/teams/gosst/memberships/{pr_author}',
+      f'{API_URL}/orgs/google/teams/GOSST/memberships/{pr_author}',
       headers=headers)
   print(f'membership response {member_response}')
   print(f'membership response status code {member_response.status_code}')
-  print(f'membership request: {API_URL}/orgs/google/teams/gosst/memberships/{pr_author}')
+  print(f'membership request: {API_URL}/orgs/google/teams/GOSST/memberships/{pr_author}')
+  test = requests.get(f'{API_URL}/orgs/google/teams/GOSST/memberships/oliverchang',
+      headers=headers)
+  print(f'test result {test.json()}')
   if member_response.ok:
     save_env(None, None, True)
     return True
