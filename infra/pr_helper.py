@@ -88,8 +88,6 @@ def get_criticality_score(repo_url):
       ['criticality_score', '--format', 'json', '--repo', repo_url],
       capture_output=True,
       text=True)
-  print(f'get_criticality_score stdout {report.stdout}')
-  print(f'get_criticality_score stderr {report.stderr}')
   content = report.stderr.split('\n')
   scores = {}
   for entry in content:
@@ -118,9 +116,6 @@ def has_author_modified_project(project_path, pr_author, headers):
   if not commits_response.ok or not commits_response.json():
     return False
 
-  print(f'status {commits_response.status_code}')
-  print(f'json {commits_response.json()}')
-  print(f'original {commits_response}')
   commit = commits_response.json()[0]
   return True, commit['sha']
 
@@ -134,18 +129,11 @@ def get_pull_request_url(commit, headers):
   return pr_response.json()[0]['html_url']
 
 
-def is_author_internal_member(pr_author, headers):
+def is_author_internal_member(pr_author):
   """Returns if the author is an internal member."""
-  member_response = requests.get(
-      f'{API_URL}/orgs/google/teams/GOSST/memberships/{pr_author}',
-      headers=headers)
-  print(f'membership response {member_response}')
-  print(f'membership response status code {member_response.status_code}')
-  print(f'membership request: {API_URL}/orgs/google/teams/GOSST/memberships/{pr_author}')
-  test = requests.get(f'{API_URL}/orgs/google/teams/GOSST/memberships/oliverchang',
-      headers=headers)
-  print(f'test result {test.json()}')
-  if member_response.ok:
+  internal_members = [
+    'Alan32Liu', 'hogo6002', 'jonathanmetzman', 'oliverchang']
+  if pr_author in internal_members:
     save_env(None, None, True)
     return True
   return False
@@ -173,7 +161,7 @@ def main():
   is_ready_for_merge = True
 
   # Bypasses PRs of the internal members.
-  if is_author_internal_member(pr_author, headers):
+  if is_author_internal_member(pr_author):
     return
 
   # Gets all modified projects path.
@@ -208,7 +196,7 @@ def main():
       message += (
           f'@{pr_author} is a new contributor to '
           f'[{project_path}]({project_url}). The PR must be approved by known '
-          'contributors before it can be merged. ')
+          'contributors before it can be merged.<br/>')
       is_ready_for_merge = False
       continue
     commit_sha = has_commit[1]
