@@ -113,9 +113,12 @@ def has_author_modified_project(project_path, pr_author, headers):
       f'{BASE_URL}/commits?path={project_path}&author={pr_author}',
       headers=headers)
 
-  if not commits_response.ok:
+  if not commits_response.ok or not commits_response.json():
     return False
 
+  print(f'status {commits_response.status_code}')
+  print(f'json {commits_response.json()}')
+  print(f'original {commits_response}')
   commit = commits_response.json()[0]
   return True, commit['sha']
 
