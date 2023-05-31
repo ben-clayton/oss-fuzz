@@ -91,7 +91,7 @@ def get_criticality_score(repo_url):
                            capture_output=True, text=True)
 
   report_dict = json.loads(report.stdout)
-  return report_dict.get('criticality_score', 'N/A')
+  return report_dict.get('default_score', 'N/A')
 
 
 def is_known_contributor(content, email):
