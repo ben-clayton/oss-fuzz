@@ -16,6 +16,7 @@
 ################################################################################
 """Adds comments for PR to provide more information for approvers."""
 import base64
+import json
 import os
 import subprocess
 
@@ -84,28 +85,13 @@ def get_integrated_project_info(pr_number, headers):
 
 def get_criticality_score(repo_url):
   """Gets the criticality score of the project."""
-  process_1 = subprocess.run('ls')
-  print(f'ls: {process_1}')
-  process_2 = subprocess.run('ls', 'go')
-  print(f'ls go: {process_2}')
-  process_3 = subprocess.run('./go/criticality_score', '--format', 'json', '-gcp-project-id=clusterfuzz-external', repo_url)
-  print(f'criticality_score: {process_3}')
-  print(f'criticality_score stdout: {process_3.stdout}')
-  print(f'criticality_score stderr: {process_3.stderr}')
-  # report = subprocess.run(
-  #     ['criticality_score', '--format', 'json', '--repo', repo_url],
-  #     capture_output=True,
-  #     text=True)
-  # content = report.stderr.split('\n')
-  # scores = {}
-  # for entry in content:
-  #   kv_entry = entry.split(': ')
-  #   if len(kv_entry) == 2:
-  #     key = kv_entry[0].strip().replace(',', '').replace('"', '')
-  #     value = kv_entry[1].strip().replace(',', '')
-  #     scores[key] = value
+  report = subprocess.run(['/home/runner/go/bin/criticality_score', '--format',
+                          'json', '-gcp-project-id=clusterfuzz-external',
+                           '-depsdev-disable', repo_url],
+                           capture_output=True, text=True)
 
-  # return scores.get('criticality_score', 'N/A')
+  report_dict = json.loads(report.stdout)
+  return report_dict.get('criticality_score', 'N/A')
 
 
 def is_known_contributor(content, email):
@@ -149,6 +135,8 @@ def is_author_internal_member(pr_author):
 
 def save_env(message, is_ready_for_merge, is_internal=False):
   """Saves the outputs as environment variables."""
+  print(f'message: {message}')
+  print(f'message: {is_ready_for_merge}')
   with open(os.environ['GITHUB_ENV'], 'a') as github_env:
     github_env.write(f'MESSAGE={message}\n')
     github_env.write(f'IS_READY_FOR_MERGE={is_ready_for_merge}\n')
@@ -168,69 +156,58 @@ def main():
   message = ''
   is_ready_for_merge = True
 
-  process_1 = subprocess.run(['echo', '~'])
-  print(f'ls: {process_1}')
-  process_1 = subprocess.run('ls', '~')
-  print(f'ls: {process_1}')
-  process_2 = subprocess.run('ls', 'go')
-  print(f'ls go: {process_2}')
-  process_3 = subprocess.run(['~/go/bin/criticality_score', '--format', 'json', '-gcp-project-id=clusterfuzz-external', 'https://github.com/google/clusterfuzz'])
-  print(f'criticality_score: {process_3}')
-  print(f'criticality_score stdout: {process_3.stdout}')
-  print(f'criticality_score stderr: {process_3.stderr}')
+  # Bypasses PRs of the internal members.
+  if is_author_internal_member(pr_author):
+    return
 
-  # # Bypasses PRs of the internal members.
-  # if is_author_internal_member(pr_author):
-  #   return
+  # Gets all modified projects path.
+  projects_path = get_projects_path(pr_number, headers)
+  email = get_author_email(pr_number, headers)
 
-  # # Gets all modified projects path.
-  # projects_path = get_projects_path(pr_number, headers)
-  # email = get_author_email(pr_number, headers)
+  for project_path in projects_path:
+    project_url = f'{GITHUB_URL}/{OWNER}/{REPO}/tree/{BRANCH}/{project_path}'
+    content_dict = get_project_yaml(project_path, headers)
 
-  # for project_path in projects_path:
-  #   project_url = f'{GITHUB_URL}/{OWNER}/{REPO}/tree/{BRANCH}/{project_path}'
-  #   content_dict = get_project_yaml(project_path, headers)
+    # Gets information for the new integrating project
+    if not content_dict:
+      is_ready_for_merge = False
+      new_project = get_integrated_project_info(pr_number, headers)
+      repo_url = new_project.get('main_repo')
+      if repo_url is not None:
+        message += (f'@{pr_author} is integrating a new project:<br/>'
+                    f'- Main repo: {repo_url}<br/> - Criticality score: '
+                    f'{get_criticality_score(repo_url)}<br/>')
+      continue
 
-  #   # Gets information for the new integrating project
-  #   if not content_dict:
-  #     is_ready_for_merge = False
-  #     new_project = get_integrated_project_info(pr_number, headers)
-  #     repo_url = new_project.get('main_repo')
-  #     if repo_url is not None:
-  #       message += (f'@{pr_author} is integrating a new project:<br/>'
-  #                   f'- Main repo: {repo_url}<br/> - Criticality score: '
-  #                   f'{get_criticality_score(repo_url)}<br/>')
-  #     continue
+    # Checks if the author is in the contact list.
+    if is_known_contributor(content_dict, email):
+      message += (
+          f'@{pr_author} is either the primary contact or '
+          f'is in the CCs list of [{project_path}]({project_url}).<br/>')
+      continue
 
-  #   # Checks if the author is in the contact list.
-  #   if is_known_contributor(content_dict, email):
-  #     message += (
-  #         f'@{pr_author} is either the primary contact or '
-  #         f'is in the CCs list of [{project_path}]({project_url}).<br/>')
-  #     continue
+    # Checks the previous commits.
+    has_commit = has_author_modified_project(project_path, pr_author, headers)
+    if not has_commit:
+      message += (
+          f'@{pr_author} is a new contributor to '
+          f'[{project_path}]({project_url}). The PR must be approved by known '
+          'contributors before it can be merged.<br/>')
+      is_ready_for_merge = False
+      continue
+    commit_sha = has_commit[1]
 
-  #   # Checks the previous commits.
-  #   has_commit = has_author_modified_project(project_path, pr_author, headers)
-  #   if not has_commit:
-  #     message += (
-  #         f'@{pr_author} is a new contributor to '
-  #         f'[{project_path}]({project_url}). The PR must be approved by known '
-  #         'contributors before it can be merged.<br/>')
-  #     is_ready_for_merge = False
-  #     continue
-  #   commit_sha = has_commit[1]
+    # If the previous commit is not associated with a pull request.
+    pr_message = (f'@{pr_author} has previously contributed to '
+                  f'[{project_path}]({project_url}). The previous commit was '
+                  f'{GITHUB_URL}/{OWNER}/{REPO}/commit/{commit_sha}<br/>')
 
-  #   # If the previous commit is not associated with a pull request.
-  #   pr_message = (f'@{pr_author} has previously contributed to '
-  #                 f'[{project_path}]({project_url}). The previous commit was '
-  #                 f'{GITHUB_URL}/{OWNER}/{REPO}/commit/{commit_sha}<br/>')
-
-  #   pr_url = get_pull_request_url(commit_sha, headers)
-  #   if pr_url is not None:
-  #     pr_message = (f'@{pr_author} has previously contributed to '
-  #                   f'[{project_path}]({project_url}). '
-  #                   f'The previous PR was {pr_url}<br/>')
-  #   message += pr_message
+    pr_url = get_pull_request_url(commit_sha, headers)
+    if pr_url is not None:
+      pr_message = (f'@{pr_author} has previously contributed to '
+                    f'[{project_path}]({project_url}). '
+                    f'The previous PR was {pr_url}<br/>')
+    message += pr_message
 
   save_env(message, is_ready_for_merge, False)
 
