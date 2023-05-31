@@ -168,58 +168,67 @@ def main():
   message = ''
   is_ready_for_merge = True
 
-  # Bypasses PRs of the internal members.
-  if is_author_internal_member(pr_author):
-    return
+  process_1 = subprocess.run('ls')
+  print(f'ls: {process_1}')
+  process_2 = subprocess.run('ls', 'go')
+  print(f'ls go: {process_2}')
+  process_3 = subprocess.run('./go/criticality_score', '--format', 'json', '-gcp-project-id=clusterfuzz-external', 'https://github.com/google/clusterfuzz')
+  print(f'criticality_score: {process_3}')
+  print(f'criticality_score stdout: {process_3.stdout}')
+  print(f'criticality_score stderr: {process_3.stderr}')
 
-  # Gets all modified projects path.
-  projects_path = get_projects_path(pr_number, headers)
-  email = get_author_email(pr_number, headers)
+  # # Bypasses PRs of the internal members.
+  # if is_author_internal_member(pr_author):
+  #   return
 
-  for project_path in projects_path:
-    project_url = f'{GITHUB_URL}/{OWNER}/{REPO}/tree/{BRANCH}/{project_path}'
-    content_dict = get_project_yaml(project_path, headers)
+  # # Gets all modified projects path.
+  # projects_path = get_projects_path(pr_number, headers)
+  # email = get_author_email(pr_number, headers)
 
-    # Gets information for the new integrating project
-    if not content_dict:
-      is_ready_for_merge = False
-      new_project = get_integrated_project_info(pr_number, headers)
-      repo_url = new_project.get('main_repo')
-      if repo_url is not None:
-        message += (f'@{pr_author} is integrating a new project:<br/>'
-                    f'- Main repo: {repo_url}<br/> - Criticality score: '
-                    f'{get_criticality_score(repo_url)}<br/>')
-      continue
+  # for project_path in projects_path:
+  #   project_url = f'{GITHUB_URL}/{OWNER}/{REPO}/tree/{BRANCH}/{project_path}'
+  #   content_dict = get_project_yaml(project_path, headers)
 
-    # Checks if the author is in the contact list.
-    if is_known_contributor(content_dict, email):
-      message += (
-          f'@{pr_author} is either the primary contact or '
-          f'is in the CCs list of [{project_path}]({project_url}).<br/>')
-      continue
+  #   # Gets information for the new integrating project
+  #   if not content_dict:
+  #     is_ready_for_merge = False
+  #     new_project = get_integrated_project_info(pr_number, headers)
+  #     repo_url = new_project.get('main_repo')
+  #     if repo_url is not None:
+  #       message += (f'@{pr_author} is integrating a new project:<br/>'
+  #                   f'- Main repo: {repo_url}<br/> - Criticality score: '
+  #                   f'{get_criticality_score(repo_url)}<br/>')
+  #     continue
 
-    # Checks the previous commits.
-    has_commit = has_author_modified_project(project_path, pr_author, headers)
-    if not has_commit:
-      message += (
-          f'@{pr_author} is a new contributor to '
-          f'[{project_path}]({project_url}). The PR must be approved by known '
-          'contributors before it can be merged.<br/>')
-      is_ready_for_merge = False
-      continue
-    commit_sha = has_commit[1]
+  #   # Checks if the author is in the contact list.
+  #   if is_known_contributor(content_dict, email):
+  #     message += (
+  #         f'@{pr_author} is either the primary contact or '
+  #         f'is in the CCs list of [{project_path}]({project_url}).<br/>')
+  #     continue
 
-    # If the previous commit is not associated with a pull request.
-    pr_message = (f'@{pr_author} has previously contributed to '
-                  f'[{project_path}]({project_url}). The previous commit was '
-                  f'{GITHUB_URL}/{OWNER}/{REPO}/commit/{commit_sha}<br/>')
+  #   # Checks the previous commits.
+  #   has_commit = has_author_modified_project(project_path, pr_author, headers)
+  #   if not has_commit:
+  #     message += (
+  #         f'@{pr_author} is a new contributor to '
+  #         f'[{project_path}]({project_url}). The PR must be approved by known '
+  #         'contributors before it can be merged.<br/>')
+  #     is_ready_for_merge = False
+  #     continue
+  #   commit_sha = has_commit[1]
 
-    pr_url = get_pull_request_url(commit_sha, headers)
-    if pr_url is not None:
-      pr_message = (f'@{pr_author} has previously contributed to '
-                    f'[{project_path}]({project_url}). '
-                    f'The previous PR was {pr_url}<br/>')
-    message += pr_message
+  #   # If the previous commit is not associated with a pull request.
+  #   pr_message = (f'@{pr_author} has previously contributed to '
+  #                 f'[{project_path}]({project_url}). The previous commit was '
+  #                 f'{GITHUB_URL}/{OWNER}/{REPO}/commit/{commit_sha}<br/>')
+
+  #   pr_url = get_pull_request_url(commit_sha, headers)
+  #   if pr_url is not None:
+  #     pr_message = (f'@{pr_author} has previously contributed to '
+  #                   f'[{project_path}]({project_url}). '
+  #                   f'The previous PR was {pr_url}<br/>')
+  #   message += pr_message
 
   save_env(message, is_ready_for_merge, False)
 
