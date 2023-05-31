@@ -123,14 +123,22 @@ def get_pull_request_url(commit, headers):
   return pr_response.json()[0]['html_url']
 
 
-def is_author_internal_member(pr_author):
+def is_author_internal_member(pr_author, headers):
   """Returns if the author is an internal member."""
-  internal_members = [
-    'Alan32Liu', 'jonathanmetzman', 'oliverchang']
-  if pr_author in internal_members:
-    save_env(None, None, True)
-    return True
+  response = requests.get(f'{BASE_URL}/contents/MAINTAINERS',
+                             headers=headers)
+  if not response.ok:
+    return False
+
+  maintainers = base64.b64decode(response.json()['content']).decode('UTF-8')
+  for line in maintainers.split('\n'):
+    print(f"username: {line.split(' @')[1]}")
+    if pr_author == line.split(' @')[1]:
+      save_env(None, None, True)
+      return True
+
   return False
+
 
 
 def save_env(message, is_ready_for_merge, is_internal=False):
@@ -157,8 +165,8 @@ def main():
   is_ready_for_merge = True
 
   # Bypasses PRs of the internal members.
-  if is_author_internal_member(pr_author):
-    return
+  # if is_author_internal_member(pr_author, headers):
+  #   return
 
   # Gets all modified projects path.
   projects_path = get_projects_path(pr_number, headers)
