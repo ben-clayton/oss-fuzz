@@ -84,20 +84,28 @@ def get_integrated_project_info(pr_number, headers):
 
 def get_criticality_score(repo_url):
   """Gets the criticality score of the project."""
-  report = subprocess.run(
-      ['criticality_score', '--format', 'json', '--repo', repo_url],
-      capture_output=True,
-      text=True)
-  content = report.stderr.split('\n')
-  scores = {}
-  for entry in content:
-    kv_entry = entry.split(': ')
-    if len(kv_entry) == 2:
-      key = kv_entry[0].strip().replace(',', '').replace('"', '')
-      value = kv_entry[1].strip().replace(',', '')
-      scores[key] = value
+  process_1 = subprocess.run('ls')
+  print(f'ls: {process_1}')
+  process_2 = subprocess.run('ls', 'go')
+  print(f'ls go: {process_2}')
+  process_3 = subprocess.run('./go/criticality_score', '--format', 'json', '-gcp-project-id=clusterfuzz-external', repo_url)
+  print(f'criticality_score: {process_3}')
+  print(f'criticality_score stdout: {process_3.stdout}')
+  print(f'criticality_score stderr: {process_3.stderr}')
+  # report = subprocess.run(
+  #     ['criticality_score', '--format', 'json', '--repo', repo_url],
+  #     capture_output=True,
+  #     text=True)
+  # content = report.stderr.split('\n')
+  # scores = {}
+  # for entry in content:
+  #   kv_entry = entry.split(': ')
+  #   if len(kv_entry) == 2:
+  #     key = kv_entry[0].strip().replace(',', '').replace('"', '')
+  #     value = kv_entry[1].strip().replace(',', '')
+  #     scores[key] = value
 
-  return scores.get('criticality_score', 'N/A')
+  # return scores.get('criticality_score', 'N/A')
 
 
 def is_known_contributor(content, email):
