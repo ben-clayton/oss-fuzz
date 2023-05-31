@@ -168,11 +168,13 @@ def main():
   message = ''
   is_ready_for_merge = True
 
-  process_1 = subprocess.run('ls')
+  process_1 = subprocess.run(['echo', '~'])
+  print(f'ls: {process_1}')
+  process_1 = subprocess.run('ls', '~')
   print(f'ls: {process_1}')
   process_2 = subprocess.run('ls', 'go')
   print(f'ls go: {process_2}')
-  process_3 = subprocess.run('./go/criticality_score', '--format', 'json', '-gcp-project-id=clusterfuzz-external', 'https://github.com/google/clusterfuzz')
+  process_3 = subprocess.run(['~/go/bin/criticality_score', '--format', 'json', '-gcp-project-id=clusterfuzz-external', 'https://github.com/google/clusterfuzz'])
   print(f'criticality_score: {process_3}')
   print(f'criticality_score stdout: {process_3.stdout}')
   print(f'criticality_score stderr: {process_3.stderr}')
