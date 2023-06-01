@@ -133,8 +133,8 @@ def is_author_internal_member(pr_author, headers):
 
   maintainers = base64.b64decode(response.json()['content']).decode('UTF-8')
   for line in maintainers.split('\n'):
-    print(f"username: {line.split(' @')[1]}")
-    if pr_author == line.split(' @')[1]:
+    print(f"username: {line.split(',')[2]}")
+    if pr_author == line.split(',')[2]:
       save_env(None, None, True)
       return True
 
