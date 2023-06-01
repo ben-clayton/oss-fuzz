@@ -127,7 +127,8 @@ def get_pull_request_url(commit, headers):
 
 def is_author_internal_member(pr_author, headers):
   """Returns if the author is an internal member."""
-  response = requests.get(f'{BASE_URL}/contents/MAINTAINERS', headers=headers)
+  response = requests.get(f'{BASE_URL}/contents/infra/MAINTAINERS.csv',
+                          headers=headers)
   if not response.ok:
     return False
 
