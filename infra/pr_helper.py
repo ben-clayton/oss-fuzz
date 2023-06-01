@@ -85,10 +85,12 @@ def get_integrated_project_info(pr_number, headers):
 
 def get_criticality_score(repo_url):
   """Gets the criticality score of the project."""
-  report = subprocess.run(['/home/runner/go/bin/criticality_score', '--format',
-                          'json', '-gcp-project-id=clusterfuzz-external',
-                           '-depsdev-disable', repo_url],
-                           capture_output=True, text=True)
+  report = subprocess.run([
+      '/home/runner/go/bin/criticality_score', '--format', 'json',
+      '-gcp-project-id=clusterfuzz-external', '-depsdev-disable', repo_url
+  ],
+                          capture_output=True,
+                          text=True)
 
   report_dict = json.loads(report.stdout)
   return report_dict.get('default_score', 'N/A')
@@ -125,8 +127,7 @@ def get_pull_request_url(commit, headers):
 
 def is_author_internal_member(pr_author, headers):
   """Returns if the author is an internal member."""
-  response = requests.get(f'{BASE_URL}/contents/MAINTAINERS',
-                             headers=headers)
+  response = requests.get(f'{BASE_URL}/contents/MAINTAINERS', headers=headers)
   if not response.ok:
     return False
 
